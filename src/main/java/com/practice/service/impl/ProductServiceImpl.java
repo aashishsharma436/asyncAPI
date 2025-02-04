@@ -1,9 +1,9 @@
 package com.practice.service.impl;
 
 import com.practice.entity.ProductEntity;
-import com.practice.error.EntityNotFoundException;
+import com.practice.exception.EntityNotFoundException;
 import com.practice.model.Product;
-import com.practice.repo.ProductRepo;
+import com.practice.repo.ProductRepository;
 import com.practice.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -11,72 +11,71 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-
-@Slf4j
 @Service
+@Slf4j
 public class ProductServiceImpl implements ProductService {
 
-    private final ProductRepo repo;
+    private final ProductRepository repo;
 
-    public ProductServiceImpl(ProductRepo productRepository) {
+    public ProductServiceImpl(ProductRepository productRepository) {
         this.repo = productRepository;
-    }
-
-    private Product convertToModel(ProductEntity entity){
-        Product model = new Product();
-        BeanUtils.copyProperties(entity,model);
-        return model;
-    }
-
-    private ProductEntity convertToEntity(Product model){
-        ProductEntity entity = new ProductEntity();
-        BeanUtils.copyProperties(model,entity);
-        return entity;
     }
     @Override
     public Flux<Product> getAllProducts() {
-        return repo
-                .findAll()
+        return repo.findAll()
                 .switchIfEmpty(Mono.error(new RuntimeException("Product not found")))
-                .map(this::convertToModel);
+                .map(this::mapToModel);
     }
-
 
     @Override
     public Mono<Product> getProductById(Long id) {
-        return repo
-                .findById(id)
-                .map(this::convertToModel)
+        return repo.findById(id).map(this::mapToModel)
                 .switchIfEmpty(Mono.error(new RuntimeException("Product not found")));
     }
 
     @Override
     public Mono<Product> addProduct(Product product) {
-        Mono<ProductEntity> productEntity = repo
-                .save(convertToEntity(product))
+        Mono<ProductEntity> productEntity = repo.save(this.mapToEntity(product))
                 .switchIfEmpty(Mono.error(new RuntimeException("Product not found")))
-                .doOnError(e->log.error("Add product getting Excpetion {} ",e.getMessage()));
-        return productEntity.map(this::convertToModel);
+                .doOnError(e -> log.error("Add product getting exception {}", e.getMessage()));
+        return productEntity.map(this::mapToModel);
     }
 
     @Override
     public Mono<Product> updateProduct(Product product, Long id) {
-        return repo
-                .findById(id)
+        return repo.findById(id)
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("Product not found")))
-                .flatMap(currProduct->{
-                    ProductEntity entity = convertToEntity(product);
-                    entity.setId(currProduct.getId());
-                    return repo.save(entity).map(this::convertToModel);
-                })
-                .doOnError(e->log.error("Update product getting Exception {}",e.getMessage()));
+                .flatMap(currentProduct -> {
+                    ProductEntity productEntity = this.mapToEntity(product);
+                    productEntity.setId(currentProduct.getId());
+                    return repo.save(productEntity).map(this::mapToModel);
+                }).doOnError(e -> log.error("Update product getting exception {}", e.getMessage()));
     }
 
     @Override
-    public Mono<Void> deleteProduct(Long id) {
-        return repo
-                .findById(id)
+    public Mono<String> deleteProduct(Long id) {
+        return repo.findById(id)
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("Product not found")))
-                .flatMap(currProduct -> repo.deleteById(currProduct.getId()));
+                .flatMap(currentProduct ->
+                    repo.deleteById(currentProduct.getId())
+                            .then(Mono.just("Product Deleted Successfully!"))
+                );
     }
+
+    private Product mapToModel(ProductEntity productEntity) {
+        return new Product(
+                productEntity.getId(),
+                productEntity.getProductName(),
+                productEntity.getProductType(),
+                productEntity.getPrice(),
+                productEntity.getQuantity()
+        );
+    }
+
+    private ProductEntity mapToEntity(Product product) {
+        ProductEntity entity = new ProductEntity();
+        BeanUtils.copyProperties(product,entity);
+        return entity;
+    }
+
 }

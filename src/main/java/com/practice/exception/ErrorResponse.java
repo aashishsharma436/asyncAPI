@@ -1,46 +1,46 @@
-package com.practice.error;
+package com.practice.exception;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter
-@Setter
-public class APIError {
-    private HttpStatus httpStatus;
+@Data
+@AllArgsConstructor
+public class ErrorResponse {
+    private HttpStatus status;
     private int statusCode;
-
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
-    private LocalDateTime timeStamp;
+    private LocalDateTime timestamp;
     private String message;
     private String debugMessage;
-    private List<ApiSubError> subErrors;
 
-    private APIError() {
-        timeStamp = LocalDateTime.now();
+    private ErrorResponse() {
+        timestamp = LocalDateTime.now();
     }
 
-    APIError(HttpStatus status) {
+    ErrorResponse(HttpStatus status) {
         this();
-        this.httpStatus = status;
+        this.status = status;
         this.statusCode = status.value();
     }
 
-    APIError(HttpStatus status, Throwable ex) {
+    ErrorResponse(HttpStatus status, Throwable ex) {
         this();
-        this.httpStatus = status;
+        this.status = status;
+        this.statusCode = status.value();
         this.message = "Unexpected error";
         this.debugMessage = ex.getLocalizedMessage();
     }
 
-    APIError(HttpStatus status, String message, Throwable ex) {
+    ErrorResponse(HttpStatus status, String message, Throwable ex) {
         this();
-        this.httpStatus = status;
         this.message = message;
+        this.status = status;
+        this.statusCode = status.value();
         this.debugMessage = ex.getLocalizedMessage();
     }
 }

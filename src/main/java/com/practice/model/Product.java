@@ -1,21 +1,17 @@
 package com.practice.model;
 
-import lombok.Data;
 import jakarta.validation.constraints.*;
 
-@Data
-public class Product{
-        @NotEmpty(message = "Product Name can not be empty")
-        private String productName;
+public record Product(
+        Long id,
+        @NotEmpty(message = "please enter the product name") String productName,
+        @NotEmpty(message = "please enter the product type") String productType,
 
-        @NotEmpty(message = "Product type can not be empty")
-        private String productType;
+        @NotNull(message = "please enter the Price")
+        @Digits(integer = 10,fraction = 2, message = "Price must have up to 6 digits and 2 decimal places")
+        Double price,
 
-        @NotNull(message = "Product price can not be empty")
-        @Positive(message = "Price must be greater than zero")
-        private Double price;
-
-        @NotNull(message = "Quantity can not be empty")
-        @Positive(message = "Quantity must be greater than zero")
-        private Integer quantity;
+        @NotNull(message = "please enter the product Quantity")
+        @Min(value = 1, message = "Quantity must be at least 1")
+        Integer quantity) {
 }

@@ -19,21 +19,25 @@ public abstract class AbstractValidationHandler<T,U extends Validator> {
     }
 
     abstract protected Mono<ServerResponse> addProduct(T validBody, final ServerRequest originalRequest);
-    abstract protected Mono<ServerResponse> updateproduct(T validBody, final ServerRequest originalRequest);
 
-    public final Mono<ServerResponse> handleRequest(final ServerRequest request){
-        return request.bodyToMono(this.validationClass).flatMap(body->{
-            Errors errors =  new BeanPropertyBindingResult(body, this.validationClass.getName());
-            this.validator.validate(body, errors);
-            if (errors == null || errors.getAllErrors().isEmpty()) {
-                Long productId = Long.valueOf(request.pathVariable("id"));
-                if (productId != null) return updateproduct(body,request);
-                else return addProduct(body,request);
-            }
-            else return onValidationErrors(errors,body,request);
-        });
+    abstract protected Mono<ServerResponse> updateProduct(T validBody, final ServerRequest originalRequest);
+
+    public final Mono<ServerResponse> handleRequest(final ServerRequest request) {
+        return request.bodyToMono(this.validationClass)
+                .flatMap(body->{
+                    Errors errors = new BeanPropertyBindingResult(body, this.validationClass.getName());
+                    this.validator.validate(body,errors);
+                    if (errors == null || errors.getAllErrors().isEmpty()) {
+                        Long productId = Long.valueOf(request.pathVariable("id"));
+                        if (productId != null) return updateProduct(body, request);
+                        else return addProduct(body, request);
+                    }
+                    else return onValidationErrors(errors, body, request);
+                });
     }
+
     protected Mono<ServerResponse> onValidationErrors(Errors errors, T invalidBody, final ServerRequest request) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errors.getAllErrors().toString());
     }
+
 }

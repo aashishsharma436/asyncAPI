@@ -1,4 +1,4 @@
-package com.practice.utils;
+package com.practice.constant;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.RequestPredicate;
